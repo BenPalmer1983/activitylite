@@ -162,7 +162,7 @@ PROGRAM activitylite
         write(bufferA,"(E14.6)") time
         write(bufferB,"(E14.6)") activity
         write(rowTemp, trim(bufferC)) (isotopeChange(j,4),"   ", j=1,isotopeCount)
-        print *,bufferA(1:15),rowTemp(1:(isotopeCount*17)),bufferB
+        print *,bufferA(1:15),rowTemp(1:(isotopeCount*17)),trim(bufferB)
       End If
       If(calcType.eq.2)Then  ! Print out numeric only
         activity = 0.0D0
@@ -176,7 +176,7 @@ PROGRAM activitylite
         write(bufferA,"(E14.6)") time
         write(bufferB,"(E14.6)") activity
         write(rowTemp, trim(bufferC)) (isotopeChange(j,12),"   ", j=1,isotopeCount)
-        print *,bufferA(1:15),rowTemp(1:(isotopeCount*17)),bufferB
+        print *,bufferA(1:15),rowTemp(1:(isotopeCount*17)),trim(bufferB)
       End If
       
     End Do
@@ -361,7 +361,47 @@ PROGRAM activitylite
       End If
     End If    
 ! Numeric inverse laplace for remainder    
-    If(decaySteps.ge.4)Then  
+    If(decaySteps.ge.4)Then 
+! child C terms
+      resultQ = &
+      B(2)*B(3)*B(4)*L(1)*L(2)*L(3)*w*&                     ! Term 1
+      (&
+       1.0D0/(L(1)*L(2)*L(3)*L(4))&
+      +E(1)/(L(1)*(L(1)-L(2))*(L(1)-L(3))*(L(1)-L(4)))&
+      -E(2)/(L(2)*(L(1)-L(2))*(L(1)-L(3))*(L(2)-L(4)))&
+      -E(3)/(L(3)*(L(1)-L(3))*(L(3)-L(2))*(L(3)-L(4)))&
+      -E(4)/(L(4)*(L(1)-L(4))*(L(4)-L(2))*(L(4)-L(3)))&
+      )+&
+      B(2)*B(3)*B(4)*L(1)*L(2)*L(3)*N(1)*&                  ! Term 2
+      (&
+       E(2)/((L(1)-L(2))*(L(2)-L(3))*(L(2)-L(4)))&
+      -E(1)/((L(1)-L(2))*(L(1)-L(3))*(L(1)-L(4)))&
+      +E(3)/((L(1)-L(3))*(L(3)-L(2))*(L(3)-L(4)))&
+      +E(4)/((L(1)-L(4))*(L(4)-L(2))*(L(4)-L(3)))&
+      )+&
+      B(3)*B(4)*L(2)*L(3)*N(2)*&                            ! Term 3
+      (&
+       E(2)/((L(2)-L(3))*(L(2)-L(4)))&
+      -E(3)/((L(2)-L(3))*(L(3)-L(4)))&
+      -E(4)/((L(2)-L(4))*(L(4)-L(3)))&
+      )+&
+      B(4)*L(3)*N(3)*&                                      ! Term 4
+      (&
+       E(3)/(L(4)-L(3))&
+      +E(4)/(L(3)-L(4))&
+      )+&
+      E(4)*N(4)                                             ! Term 5
+      resultGS = CalcIsotopeAmountGS(tQ,4,isotopeChange)
+      If(ISNAN(resultQ))Then ! solve numerically
+        isotopeChange(4,4) = dble(resultGS)   
+        isotopeChange(4,12) = dble(resultGS)  
+      Else  
+        isotopeChange(4,4) = dble(resultQ) 
+        isotopeChange(4,12) = dble(resultGS)       
+      End If
+    End If    
+! Numeric inverse laplace for remainder    
+    If(decaySteps.ge.5)Then   
       Do i=4,decaySteps
         resultGS = CalcIsotopeAmountGS(tQ,i,isotopeChange)
         isotopeChange(i,4) = dble(resultGS)  

@@ -1,5 +1,5 @@
-0.0D0    1.0D0    1.0D1   10       2       ! w, tStart, tEnd, data points
-Po-218   1.83D2       1.00D8               ! t1/2  N(t) 
+0.0D0    1.0D0    1.0D1   10       1       ! w, tStart, tEnd, data points
+Po-218   1.83D2       6.00D20              ! t1/2  N(t) 
 Pb-214   1.608D3      0.0D0   1.0D0        ! t1/2  N(t) 
 Bi-214   1.194D3      0.0D0   1.0D0        ! t1/2  N(t)  B(1,2)
 Po-214   1.64E-4      0.0D0   1.0D0        ! t1/2  N(t)  B(1,2)  
