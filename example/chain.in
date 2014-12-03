@@ -1,4 +1,4 @@
-0.0D0    1.0D0    1.0D1   10       1       ! w, tStart, tEnd, data points
+0.0D0    1.0D0    1.0D1   10        2      ! w, tStart, tEnd, data points, calc type
 Po-218   1.83D2       6.00D20              ! t1/2  N(t) 
 Pb-214   1.608D3      0.0D0   1.0D0        ! t1/2  N(t) 
 Bi-214   1.194D3      0.0D0   1.0D0        ! t1/2  N(t)  B(1,2)

@@ -1,8 +1,6 @@
 PROGRAM activitylite
 
-
-
-!---------------------------------------------
+! ---------------------------------------------
 !  Calculated the number of atoms of each isotope in a decay chain
 !  Follows only one branch, gives total activity of this branch
 !  Production rate of parent isotope
@@ -11,31 +9,26 @@ PROGRAM activitylite
 !  Example input file (chain used by :http://wordpress.mrreid.org/)
 !
 !  0.0D0    1.0D0    1.0D1   10   1           ! parent production rate, tStart, tEnd, data points, calcType
-!  Rd-209   3.96D0       6.02D6               ! Parent  (1)  t1/2  N(t) 
+!  Rd-209   3.96D0       6.02D6               ! Parent  (1)  t1/2  N(t)
 !  Po-215   2D-3         0.0D0   1.0D0        ! Child A (2)  t1/2  N(t)  B(1,2)
-!  Pb-211   2166.0D0     0.0D0   1.0D0        ! Child B (3)  t1/2  N(t)  B(1,2)  
-!  Bi-211   128.0D0      0.0D0   1.0D0        ! Child C (4)  t1/2  N(t)  B(1,2) 
-!  Po-211   0.516        0.0D0   1.0D0        ! Child D (5)  t1/2  N(t)  B(1,2) 
+!  Pb-211   2166.0D0     0.0D0   1.0D0        ! Child B (3)  t1/2  N(t)  B(1,2)
+!  Bi-211   128.0D0      0.0D0   1.0D0        ! Child C (4)  t1/2  N(t)  B(1,2)
+!  Po-211   0.516        0.0D0   1.0D0        ! Child D (5)  t1/2  N(t)  B(1,2)
 !  Pb-207   -1           0.0D0   1.0D0        ! Child E (6)  t1/2  N(t)  B(1,2)
 !
 !
 !  Compile using the make.sh script
 !
 !  Example usage:
-!  
+!
 !  ./activitylite.x chain.in
 !
 !
 !
 
-
-
-
-
-
 ! Force declaration of all variables
   Implicit None
-! Data types  
+! Data types
   Integer, Parameter :: SingleReal = Selected_Real_Kind(6,37)         ! single real, 6 decimal precision, exponent range 37
   Integer, Parameter :: DoubleReal = Selected_Real_Kind(15,307)       ! double real, 15 decimal precision, exponent range 307
   Integer, Parameter :: QuadrupoleReal = Selected_Real_Kind(33,4931)  ! quadrupole real
@@ -48,10 +41,10 @@ PROGRAM activitylite
   Integer(kind=StandardInteger), Parameter :: maxFileRows = 10000000
   Real(kind=QuadrupoleReal), Parameter :: lnTwoQ = 0.6931471805599453094172321214581765680755D0
 
-  Call runCalc() 
+  Call runCalc()
 
   Contains
- 
+
   Subroutine runCalc()
 ! force declaration of all variables
     Implicit None
@@ -67,7 +60,7 @@ PROGRAM activitylite
     Real(kind=DoubleReal) :: time, w, tStart, tEnd, activity
 ! Get file name
     call get_command_argument(1,inputFile)
-! count isotopes    
+! count isotopes
     Open(UNIT=1,FILE=inputFile)
     isotopeCount = -1
     Do i=1,maxFileRows
@@ -82,11 +75,12 @@ PROGRAM activitylite
     End Do
     Close(1)
 ! Allocate arrays
-    Allocate(decayDataArray(1:isotopeCount,1:6))    
+    Allocate(decayDataArray(1:isotopeCount,1:6))
     Allocate(isotopeChange(1:isotopeCount,1:12))
-! Read input   
+! Read input
     Print *,"Input Decay Chain"
-    Print *,"--------------------------------------------------------------------------------------"
+    Print *,"---------------------------------------------------------------------------------",&
+    "-------------------------------------"
     Open(UNIT=1,FILE=inputFile)
     isotopeCount = 0
     Do i=1,maxFileRows
@@ -104,7 +98,7 @@ PROGRAM activitylite
         Print *,"Parent production rate:    ",w
         Print *,"Print activity start time: ",tStart
         Print *,"Print activity end time:   ",tEnd
-        Print *,"Data points:               ",tIncs        
+        Print *,"Data points:               ",tIncs
       Else
         rowTemp = RemoveSpaces(fileRow)
         If(rowTemp(1:1).ne." ")Then
@@ -113,35 +107,39 @@ PROGRAM activitylite
             Read(fileRow,*) bufferA, bufferB, bufferC
             Read(bufferB,*) decayDataArray(isotopeCount,3)  ! Half life
             Read(bufferC,*) decayDataArray(isotopeCount,2)  ! Start atoms
-            decayDataArray(isotopeCount,4) = 1.0D0 
+            decayDataArray(isotopeCount,4) = 1.0D0
             labelArray(isotopeCount) = bufferA(1:16)
             print *,labelArray(isotopeCount),decayDataArray(isotopeCount,3),&
             decayDataArray(isotopeCount,2),decayDataArray(isotopeCount,4)
-          Else 
+          Else
             Read(fileRow,*) bufferA, bufferB, bufferC, bufferD
             Read(bufferB,*) decayDataArray(isotopeCount,3)  ! Half life
             Read(bufferC,*) decayDataArray(isotopeCount,2)  ! Start atoms
-            Read(bufferD,*) decayDataArray(isotopeCount,4)  ! Branching factor    
+            Read(bufferD,*) decayDataArray(isotopeCount,4)  ! Branching factor
             labelArray(isotopeCount) = bufferA(1:16)
             print *,labelArray(isotopeCount),decayDataArray(isotopeCount,3),&
             decayDataArray(isotopeCount,2),decayDataArray(isotopeCount,4)
           End If
         End If
-      End If  
+      End If
     End Do
-    Close(1) 
-    Print *,"--------------------------------------------------------------------------------------"
+    Close(1)
+    If(calcType.gt.2.or.calcType.lt.1)Then
+      calcType = 1
+    End If
+    Print *,"---------------------------------------------------------------------------------",&
+    "-------------------------------------"
 ! string format
     bufferB = BlankString(bufferB)
     write(bufferB,"(I4)") isotopeCount
     bufferB = RemoveSpaces(bufferB)
     bufferB = "("//trim(bufferB)//"(A16,A1))"
-! ----    
+! ----
     bufferC = BlankString(bufferC)
     write(bufferC,"(I4)") isotopeCount
     bufferC = RemoveSpaces(bufferC)
     bufferC = "("//trim(bufferC)//"(E14.6,A3))"
-! print out    
+! print out
     rowTemp = BlankString(rowTemp)
     write(rowTemp, trim(bufferB)) (labelArray(j)," ", j=1,isotopeCount)
     rowTemp = "Time/s         "//trim(rowTemp)//"                       "
@@ -149,72 +147,57 @@ PROGRAM activitylite
     print *,rowTemp
     Do i=1,tIncs
       time = tStart+(i-1)*((tEnd-tStart)/(tIncs-1))
-      isotopeChange = CalcIsotopeAmount(100.0D0,decayDataArray,time)   
-      If(calcType.eq.1)Then  ! Print out analytic result (and numeric where analytic stops)
-        activity = 0.0D0
-        Do j=1,isotopeCount
-          If(isotopeChange(j,7).gt.0)Then
-            activity = activity + isotopeChange(j,4)*isotopeChange(j,8)
-          End If
-        End Do
-        bufferA = BlankString(bufferA)
-        rowTemp = BlankString(rowTemp)
-        write(bufferA,"(E14.6)") time
-        write(bufferB,"(E14.6)") activity
-        write(rowTemp, trim(bufferC)) (isotopeChange(j,4),"   ", j=1,isotopeCount)
-        print *,bufferA(1:15),rowTemp(1:(isotopeCount*17)),trim(bufferB)
-      End If
-      If(calcType.eq.2)Then  ! Print out numeric only
-        activity = 0.0D0
-        Do j=1,isotopeCount
-          If(isotopeChange(j,7).gt.0)Then
-            activity = activity + isotopeChange(j,12)*isotopeChange(j,8)
-          End If
-        End Do
-        bufferA = BlankString(bufferA)
-        rowTemp = BlankString(rowTemp)
-        write(bufferA,"(E14.6)") time
-        write(bufferB,"(E14.6)") activity
-        write(rowTemp, trim(bufferC)) (isotopeChange(j,12),"   ", j=1,isotopeCount)
-        print *,bufferA(1:15),rowTemp(1:(isotopeCount*17)),trim(bufferB)
-      End If
-      
+      isotopeChange = CalcIsotopeAmount(100.0D0,decayDataArray,time,calcType)
+      activity = 0.0D0
+      Do j=1,isotopeCount
+        If(isotopeChange(j,7).gt.0)Then
+          activity = activity + isotopeChange(j,4)*isotopeChange(j,8)
+        End If
+      End Do
+      bufferA = BlankString(bufferA)
+      rowTemp = BlankString(rowTemp)
+      write(bufferA,"(E14.6)") time
+      write(bufferB,"(E14.6)") activity
+      write(rowTemp, trim(bufferC)) (isotopeChange(j,4),"   ", j=1,isotopeCount)
+      print *,bufferA(1:15),rowTemp(1:(isotopeCount*17)),trim(bufferB)
     End Do
+    Print *,"---------------------------------------------------------------------------------",&
+    "-------------------------------------"
   End Subroutine runCalc
-  
-  
-  
+
 ! ------------------------------------------------------------------------!
 ! Decay Functions
 ! ------------------------------------------------------------------------!
 
-  Function CalcIsotopeAmount(w,decayDataArray,t) RESULT (isotopeChange)
+  Function CalcIsotopeAmount(w,decayDataArray,t,calcOptionIn) RESULT (isotopeChange)
 ! Force declaration of all variables
     Implicit None
 ! Declare variables
     Integer(kind=StandardInteger) :: i,j,decaySteps,decayStepCounter, noChanges
+    Integer(kind=StandardInteger), optional :: calcOptionIn
+    Integer(kind=StandardInteger) :: calcOption
     Real(kind=DoubleReal) :: halfLifeChange, randNumber, w, t
     Real(kind=DoubleReal), Dimension( : , : ), Allocatable :: decayDataArray
     Real(kind=DoubleReal), Dimension( : , : ), Allocatable :: isotopeChange
     Real(kind=DoubleReal) :: stableLimit
-! Quadrupole Reals    
+! Quadrupole Reals
     Real(kind=QuadrupoleReal) :: resultQ, resultGS, tQ, tempQ
     Real(kind=QuadrupoleReal), Dimension(1:20) :: L ! Lambda
     Real(kind=QuadrupoleReal), Dimension(1:20) :: N ! Starting number of atoms
     Real(kind=QuadrupoleReal), Dimension(1:20) :: E ! Exp
     Real(kind=QuadrupoleReal), Dimension(1:19) :: B ! Exp
-! -------------------------------------------------    
+! -------------------------------------------------
 ! decaySteps really means decay isotopes in chain (steps = decaySteps-1)
-! ------------------------------------------------- 
-! Input decay chain array:   
+! -------------------------------------------------
+! Input decay chain array:
 ! decayDataArray(i,1) !Tally key
 ! decayDataArray(i,2) !No. Atoms
 ! decayDataArray(i,3) !Half life
 ! decayDataArray(i,4) !branching factor
 ! decayDataArray(i,5) !isotope Z
-! decayDataArray(i,6) !isotope A   
-!-------------------------------------------------    
-! Output decay chain array:   
+! decayDataArray(i,6) !isotope A
+! -------------------------------------------------
+! Output decay chain array:
 ! isotopeChange(i,1)    !Tally key
 ! isotopeChange(i,2)    !Change in isotope amount
 ! isotopeChange(i,3)    !Start amount
@@ -224,15 +207,22 @@ PROGRAM activitylite
 ! isotopeChange(i,7)    !T1/2
 ! isotopeChange(i,8)    !Decay constant
 ! isotopeChange(i,9)    !Branching factor
-! isotopeChange(i,10)   !Parent production rate  
-! isotopeChange(i,11)   !Time    
-! isotopeChange(i,12)   !GS End    
-! -------------------------------------------------   
+! isotopeChange(i,10)   !Parent production rate
+! isotopeChange(i,11)   !Time
+! isotopeChange(i,12)   !GS End
+! -------------------------------------------------
+! Optional arguments
+    calcOption = 1  !(1) 1-4 analytic 5+ SG, (2)1+  SG,  (3) 1-4 analytic+GS 5+ SG
+    If(Present(calcOptionIn))Then
+      calcOption = calcOptionIn
+    End If
 ! Init variables
-   tQ = t
-! -------------------------------------------------   
+    tQ = t
+    resultQ = 0.0D0
+    resultGS = 0.0D0
+! -------------------------------------------------
 ! Alter decay chain
-! -------------------------------------------------  
+! -------------------------------------------------
 ! - If dTime * decay constant lt 1.0D-14 then assume stable for purposes of simulation
     decayStepCounter = 0
     Do i=1,size(decayDataArray,1)
@@ -242,25 +232,25 @@ PROGRAM activitylite
         decayDataArray(i,3) = -1    !set as stable
         Exit
       End If
-    End Do    
+    End Do
 ! Resize array
     decayDataArray = ArraySize2DDouble(decayDataArray,decayStepCounter)
-! -------------------------------------------------   
-! Set stable isotope decay constant very small to avoid infinity error   
-! -------------------------------------------------   
-    Do i=1,size(decayDataArray,1)      
+! -------------------------------------------------
+! Set stable isotope decay constant very small to avoid infinity error
+! -------------------------------------------------
+    Do i=1,size(decayDataArray,1)
       If(decayDataArray(i,3).eq.(-1))Then
         decayDataArray(i,3) = 1.0D100
       End If
-    End Do   
-! -------------------------------------------------   
+    End Do
+! -------------------------------------------------
 ! Break same decay constants by ~1E-3% to avoid singularities
-! -------------------------------------------------   
+! -------------------------------------------------
     noChanges = 0
     Do While(noChanges.eq.0)
       noChanges = 1
-      Do i=1,size(decayDataArray,1)      
-        Do j=1,size(decayDataArray,1)      
+      Do i=1,size(decayDataArray,1)
+        Do j=1,size(decayDataArray,1)
           If(i.ne.j)Then
             If(decayDataArray(i,3).eq.decayDataArray(j,3))Then
               Call RANDOM_NUMBER(randNumber)
@@ -271,8 +261,8 @@ PROGRAM activitylite
               noChanges = 0
             End If
           End If
-        End Do 
-      End Do   
+        End Do
+      End Do
     End Do
 ! set decay steps/isotopes
     decaySteps = size(decayDataArray,1)
@@ -305,135 +295,132 @@ PROGRAM activitylite
       E(i) = exp(tempQ)
       B(i) = decayDataArray(i,4)
     End Do
-!    
+!
 ! nP -> nA -> nB -> nC -> nD ...
-!    
-!Set starting variables 
-    If(decaySteps.ge.1)Then    
+!
+! Set starting variables
+    If(decaySteps.ge.1)Then
 ! calc nP
-      resultQ = (w/L(1))*(1-E(1))+N(1)*E(1)
-      resultGS = CalcIsotopeAmountGS(tQ,1,isotopeChange)
-      If(ISNAN(resultQ))Then ! solve numerically
+      If(calcOption.eq.1)Then
+        resultQ = (w/L(1))*(1-E(1))+N(1)*E(1)
+        isotopeChange(1,4) = dble(resultQ)
+      End If
+      If(calcOption.eq.2.or.ISNAN(resultQ))Then ! solve numerically
+        resultGS = CalcIsotopeAmountGS(tQ,1,isotopeChange)
         isotopeChange(1,4) = dble(resultGS)
-        isotopeChange(1,12) = dble(resultGS)  
-      Else  
-        isotopeChange(1,4) = dble(resultQ)  
-        isotopeChange(1,12) = dble(resultGS)    
       End If
-    End If  
-    If(decaySteps.ge.2)Then      
-! calc nA     
-      resultQ = B(2)*L(1)*w*(1.0D0/(L(1)*L(2))+E(1)/(L(1)*(L(1)-L(2)))-&
-                E(2)/(L(2)*(L(1)-L(2))))+&
-                B(2)*L(1)*N(1)*(E(1)/(L(2)-L(1))+E(2)/(L(1)-L(2)))+&
-                N(2)*E(2)            
-      resultGS = CalcIsotopeAmountGS(tQ,2,isotopeChange)
-      If(ISNAN(resultQ))Then ! solve numerically
-        isotopeChange(2,4) = dble(resultGS) 
-        isotopeChange(2,12) = dble(resultGS)  
-      Else  
-        isotopeChange(2,4) = dble(resultQ)  
-        isotopeChange(2,12) = dble(resultGS)      
+    End If
+    If(decaySteps.ge.2)Then
+! calc nA
+      If(calcOption.eq.1)Then ! solve numerically
+        resultQ = B(2)*L(1)*w*(1.0D0/(L(1)*L(2))+E(1)/(L(1)*(L(1)-L(2)))-&
+        E(2)/(L(2)*(L(1)-L(2))))+&
+        B(2)*L(1)*N(1)*(E(1)/(L(2)-L(1))+E(2)/(L(1)-L(2)))+&
+        N(2)*E(2)
+        isotopeChange(2,4) = dble(resultQ)
       End If
-    End If  
-    If(decaySteps.ge.3)Then   
+      If(calcOption.eq.2.or.ISNAN(resultQ))Then ! solve numerically
+        resultGS = CalcIsotopeAmountGS(tQ,2,isotopeChange)
+        isotopeChange(2,4) = dble(resultGS)
+      End If
+    End If
+    If(decaySteps.ge.3)Then
 ! child B terms
-      resultQ = &
-      w*B(2)*B(3)*L(1)*L(2)*&
-      (1.0D0/(L(1)*L(2)*L(3))-&
-      E(1)/(L(1)*(L(1)-L(2))*(L(1)-L(3)))+&
-      E(2)/(L(2)*(L(1)-L(2))*(L(2)-L(3)))+&
-      E(3)/(L(3)*(L(1)-L(3))*(L(3)-L(2))))+&
-      B(2)*B(3)*L(1)*L(2)*N(1)*&
-      (E(1)/((L(1)-L(2))*(L(1)-L(3)))-&
-      E(2)/((L(1)-L(2))*(L(2)-L(3)))-&
-      E(3)/((L(1)-L(3))*(L(3)-L(2))))+&
-      B(3)*L(2)*N(2)*&          
-      (E(1)/(L(2)-L(1))+E(2)/(L(1)-L(2)))+&
-      N(3)*E(3)
-      resultGS = CalcIsotopeAmountGS(tQ,3,isotopeChange)
-      If(ISNAN(resultQ))Then ! solve numerically
-        isotopeChange(3,4) = dble(resultGS)   
-        isotopeChange(3,12) = dble(resultGS)  
-      Else  
-        isotopeChange(3,4) = dble(resultQ) 
-        isotopeChange(3,12) = dble(resultGS)       
+      If(calcOption.eq.1)Then
+        resultQ = &
+        w*B(2)*B(3)*L(1)*L(2)*&                   ! Term 1
+        (1.0D0/(L(1)*L(2)*L(3))-&
+        E(1)/(L(1)*(L(1)-L(2))*(L(1)-L(3)))+&
+        E(2)/(L(2)*(L(1)-L(2))*(L(2)-L(3)))+&
+        E(3)/(L(3)*(L(1)-L(3))*(L(3)-L(2))))+&
+        B(2)*B(3)*L(1)*L(2)*N(1)*&                ! Term 2
+        (E(1)/((L(1)-L(2))*(L(1)-L(3)))-&
+        E(2)/((L(1)-L(2))*(L(2)-L(3)))-&
+        E(3)/((L(1)-L(3))*(L(3)-L(2))))+&
+        B(3)*L(2)*N(2)*&                          ! Term 3
+        (E(1)/(L(2)-L(1))+E(2)/(L(1)-L(2)))+&
+        N(3)*E(3)
+        isotopeChange(3,4) = dble(resultQ)
       End If
-    End If    
-! Numeric inverse laplace for remainder    
-    If(decaySteps.ge.4)Then 
+      If(calcOption.eq.2.or.ISNAN(resultQ))Then ! solve numerically
+        resultGS = CalcIsotopeAmountGS(tQ,3,isotopeChange)
+        isotopeChange(3,4) = dble(resultGS)
+      End If
+    End If
+    If(decaySteps.ge.4)Then
 ! child C terms
-      resultQ = &
-      B(2)*B(3)*B(4)*L(1)*L(2)*L(3)*w*&                     ! Term 1
-      (&
-       1.0D0/(L(1)*L(2)*L(3)*L(4))&
-      +E(1)/(L(1)*(L(1)-L(2))*(L(1)-L(3))*(L(1)-L(4)))&
-      -E(2)/(L(2)*(L(1)-L(2))*(L(1)-L(3))*(L(2)-L(4)))&
-      -E(3)/(L(3)*(L(1)-L(3))*(L(3)-L(2))*(L(3)-L(4)))&
-      -E(4)/(L(4)*(L(1)-L(4))*(L(4)-L(2))*(L(4)-L(3)))&
-      )+&
-      B(2)*B(3)*B(4)*L(1)*L(2)*L(3)*N(1)*&                  ! Term 2
-      (&
-       E(2)/((L(1)-L(2))*(L(2)-L(3))*(L(2)-L(4)))&
-      -E(1)/((L(1)-L(2))*(L(1)-L(3))*(L(1)-L(4)))&
-      +E(3)/((L(1)-L(3))*(L(3)-L(2))*(L(3)-L(4)))&
-      +E(4)/((L(1)-L(4))*(L(4)-L(2))*(L(4)-L(3)))&
-      )+&
-      B(3)*B(4)*L(2)*L(3)*N(2)*&                            ! Term 3
-      (&
-       E(2)/((L(2)-L(3))*(L(2)-L(4)))&
-      -E(3)/((L(2)-L(3))*(L(3)-L(4)))&
-      -E(4)/((L(2)-L(4))*(L(4)-L(3)))&
-      )+&
-      B(4)*L(3)*N(3)*&                                      ! Term 4
-      (&
-       E(3)/(L(4)-L(3))&
-      +E(4)/(L(3)-L(4))&
-      )+&
-      E(4)*N(4)                                             ! Term 5
-      resultGS = CalcIsotopeAmountGS(tQ,4,isotopeChange)
-      If(ISNAN(resultQ))Then ! solve numerically
-        isotopeChange(4,4) = dble(resultGS)   
-        isotopeChange(4,12) = dble(resultGS)  
-      Else  
-        isotopeChange(4,4) = dble(resultQ) 
-        isotopeChange(4,12) = dble(resultGS)       
+      If(calcOption.eq.1)Then
+        resultQ = &
+        w*B(2)*B(3)*B(4)*L(1)*L(2)*L(3)*&          ! Term 1
+        (&
+        1.0D0/(L(1)*L(2)*L(3)*L(4))&
+        +E(1)/(L(1)*(L(1)-L(2))*(L(1)-L(3))*(L(1)-L(4)))&
+        -E(2)/(L(2)*(L(1)-L(2))*(L(1)-L(3))*(L(2)-L(4)))&
+        -E(3)/(L(3)*(L(1)-L(3))*(L(3)-L(2))*(L(3)-L(4)))&
+        -E(4)/(L(4)*(L(1)-L(4))*(L(4)-L(2))*(L(4)-L(3)))&
+        )+&
+        B(2)*B(3)*L(1)*L(2)*N(1)*&                  ! Term 2
+        (&
+        E(2)/((L(1)-L(2))*(L(2)-L(3))*(L(2)-L(4)))&
+        -E(1)/((L(1)-L(2))*(L(1)-L(3))*(L(1)-L(4)))&
+        +E(3)/((L(1)-L(3))*(L(3)-L(2))*(L(3)-L(4)))&
+        +E(4)/((L(1)-L(4))*(L(4)-L(2))*(L(4)-L(3)))&
+        )+&
+        B(3)*B(4)*L(2)*L(3)*N(2)*&                   ! Term 3
+        (&
+        E(2)/((L(2)-L(3))*(L(2)-L(4)))&
+        -E(3)/((L(2)-L(3))*(L(3)-L(4)))&
+        -E(4)/((L(2)-L(4))*(L(4)-L(3)))&
+        )+&
+        B(4)*L(3)*N(3)*&                   ! Term 4
+        (&
+        E(3)/(L(4)-L(3))&
+        +E(4)/(L(3)-L(4))&
+        )+&
+        E(4)*N(4)
+        isotopeChange(4,4) = dble(resultQ)
       End If
-    End If    
-! Numeric inverse laplace for remainder    
-    If(decaySteps.ge.5)Then   
+      If(calcOption.eq.2.or.ISNAN(resultQ))Then ! solve numerically
+        resultGS = CalcIsotopeAmountGS(tQ,4,isotopeChange)
+        isotopeChange(4,4) = dble(resultGS)
+      End If
+    End If
+! Numeric inverse laplace for remainder
+    If(decaySteps.ge.5)Then
       Do i=4,decaySteps
         resultGS = CalcIsotopeAmountGS(tQ,i,isotopeChange)
-        isotopeChange(i,4) = dble(resultGS)  
-        isotopeChange(i,12) = dble(resultGS)  
+        isotopeChange(i,4) = dble(resultGS)
+        isotopeChange(i,12) = dble(resultGS)
       End Do
     End If
-! Adjust the isotope values    
-    Do i=1,decaySteps 
+! Adjust the isotope values
+    Do i=1,decaySteps
       If(isotopeChange(i,4).lt.0.0D0)Then
         isotopeChange(i,4) = 0.0D0
       End If
-    End Do 
+      If(isotopeChange(i,12).lt.0.0D0)Then
+        isotopeChange(i,12) = 0.0D0
+      End If
+    End Do
 ! Store changes in isotope amounts
     Do i=1,size(isotopeChange,1)
       isotopeChange(i,2) = isotopeChange(i,4) - isotopeChange(i,3)
     End Do
   End Function CalcIsotopeAmount
-  
-  
+
   Function CalcIsotopeAmountGS(t,isotopeStep,isotopeChangeIn) RESULT (output)
 ! Force declaration of all variables
     Implicit None
-! Declare variables  
+! Declare variables
     Integer(kind=StandardInteger) :: i, isotopeStep, M, k
     Real(kind=DoubleReal), Dimension( : , : ), Allocatable :: isotopeChangeIn
-    Real(kind=QuadrupoleReal), Dimension(1:50) :: weightingQ    
+    Real(kind=QuadrupoleReal), Dimension(1:50) :: weightingQ
     Real(kind=QuadrupoleReal), Dimension(1:20) :: L ! Lambda
     Real(kind=QuadrupoleReal), Dimension(1:20) :: N ! Starting number of atoms
     Real(kind=QuadrupoleReal), Dimension(1:20) :: B ! Starting number of atoms
-    Real(kind=QuadrupoleReal) :: kQ, w, t, ft, s, FS, output 
-!-------------------------------------------------    
-! Output decay chain array:   
+    Real(kind=QuadrupoleReal) :: kQ, w, t, ft, s, FS, output
+! -------------------------------------------------
+! Output decay chain array:
 ! isotopeChange(i,1)    !Tally key
 ! isotopeChange(i,2)    !Change in isotope amount
 ! isotopeChange(i,3)    !Start amount
@@ -443,19 +430,19 @@ PROGRAM activitylite
 ! isotopeChange(i,7)    !T1/2
 ! isotopeChange(i,8)    !Decay constant
 ! isotopeChange(i,9)    !Branching factor
-! isotopeChange(i,10)   !Parent production rate   
-! ------------------------------------------------- 
+! isotopeChange(i,10)   !Parent production rate
+! -------------------------------------------------
 ! Init variables
-    M = 8    
+    M = 8
     weightingQ = GaverStehfestWeightingQ(M,weightingQ)
     w = isotopeChangeIn(1,10)
     output = 0.0D0
-! Adjust the isotope values    
-    Do i=1,isotopeStep 
+! Adjust the isotope values
+    Do i=1,isotopeStep
       If(isotopeChangeIn(i,4).lt.0.0D0)Then
         isotopeChangeIn(i,4) = 0.0D0
       End If
-    End Do 
+    End Do
 ! Store lambda starting atom number data
     Do i=1,isotopeStep
       L(i) = lnTwoQ/isotopeChangeIn(i,7)
@@ -471,31 +458,28 @@ PROGRAM activitylite
     Do k=1,2*M
       kQ = 1.0D0 * k
       s = (kQ*lnTwoQ)/t
-! -----------------------  
+! -----------------------
       FS = (1.0D0/(s+L(1)))*(w/s+N(1))
       Do i=2,isotopeStep
         FS = (1.0D0/(s+L(i)))*(B(i)*L(i-1)*FS+N(2))
       End Do
-      !FS = (1.0D0/(s+L(1)))*(w/s+N(1))
-! -----------------------  
-      ft = ft + weightingQ(k)*FS   
+! FS = (1.0D0/(s+L(1)))*(w/s+N(1))
+! -----------------------
+      ft = ft + weightingQ(k)*FS
     End Do
-    ft = (lnTwoQ/t)*ft 
+    ft = (lnTwoQ/t)*ft
     output = Dble(ft)
-    !isotopeChangeOut(isotopeStep,4) = Dble(ft)
+! isotopeChangeOut(isotopeStep,4) = Dble(ft)
   End Function CalcIsotopeAmountGS
-  
-  
-  
-  
+
   Function GaverStehfestWeighting(N, weightingIn) RESULT (weighting)
 ! Force declaration of all variables
     Implicit None
-! Declare variables      
+! Declare variables
     Integer(kind=StandardInteger) :: N
     Integer(kind=StandardInteger) :: j, k, jStart, jEnd
     Real(kind=DoubleReal) :: factor, wSum
-    !Real(kind=DoubleReal), Dimension(1:2*N) :: weighting
+! Real(kind=DoubleReal), Dimension(1:2*N) :: weighting
     Real(kind=DoubleReal), Dimension(:) :: weightingIn
     Real(kind=DoubleReal), Dimension(1:size(weightingIn)) :: weighting
 ! Init array
@@ -513,12 +497,12 @@ PROGRAM activitylite
       End Do
       weighting(k) = factor*wSum
     End Do
-  End Function GaverStehfestWeighting  
-  
+  End Function GaverStehfestWeighting
+
   Function GaverStehfestWeightingQ(N, weightingIn) RESULT (weighting)
 ! Force declaration of all variables
     Implicit None
-! Declare variables      
+! Declare variables
     Integer(kind=StandardInteger) :: N
     Integer(kind=StandardInteger) :: j, k, jStart, jEnd
     Real(kind=QuadrupoleReal) :: factor, wSum
@@ -540,7 +524,7 @@ PROGRAM activitylite
       weighting(k) = factor*wSum
     End Do
   End Function GaverStehfestWeightingQ
-   
+
   Function Factorial(input) RESULT (output)
 ! force declaration of all variables
     Implicit None
@@ -562,7 +546,7 @@ PROGRAM activitylite
 ! calculate factorial
     c = Factorial(n)/(Factorial(n-k)*Factorial(k))
   End Function BinomialCoefficient
-  
+
   Function FactorialDP(input) RESULT (output)
 ! force declaration of all variables
     Implicit None
@@ -589,8 +573,8 @@ PROGRAM activitylite
     nkDP = Factorial(n-k)
     kDP = FactorialDP(k)
     c = 1.0D0*nDP/(nkDP*kDP)
-  End Function BinomialCoefficientDP 
-  
+  End Function BinomialCoefficientDP
+
   Function FactorialQ(input) RESULT (output)
 ! force declaration of all variables
     Implicit None
@@ -606,13 +590,13 @@ PROGRAM activitylite
       If(i.le.33)Then
         tempInt = i * tempInt
         tempQ = 1.0D0*tempInt
-      End If  
+      End If
       If(i.eq.34)Then
-        tempQ = 1.0D0*i*tempInt 
-      End If   
+        tempQ = 1.0D0*i*tempInt
+      End If
       If(i.ge.35)Then
-        tempQ = 1.0D0*i*tempQ 
-      End If       
+        tempQ = 1.0D0*i*tempQ
+      End If
     End Do
     output = tempQ
   End Function FactorialQ
@@ -629,7 +613,7 @@ PROGRAM activitylite
     kDP = FactorialDP(k)
     c = 1.0D0*nDP/(nkDP*kDP)
   End Function BinomialCoefficientQ
-  
+
   Function ArraySize2DDouble (inputArray,arraySizeHeight,arraySizeWidthIn) &
     RESULT (outputArray)
 ! force declaration of all variables
@@ -660,37 +644,36 @@ PROGRAM activitylite
       End Do
     End Do
   End Function ArraySize2DDouble
-  
 
-    Function BlankString (input) RESULT (output)
-      Character(*), INTENT(IN) :: input
-      Character(Len(input)) :: output
-      Integer(kind=StandardInteger) :: i
-      Do i=1,Len(input)
-        output(i:i) = " "
-      End Do
-    End Function BlankString
-  
-    Function RemoveSpaces (input) RESULT (output)
-      CHARACTER(*), INTENT(IN) :: input
-      CHARACTER(LEN(input)) :: outputTemp
-      CHARACTER(LEN(input)) :: output
+  Function BlankString (input) RESULT (output)
+    Character(*), INTENT(IN) :: input
+    Character(Len(input)) :: output
+    Integer(kind=StandardInteger) :: i
+    Do i=1,Len(input)
+      output(i:i) = " "
+    End Do
+  End Function BlankString
+
+  Function RemoveSpaces (input) RESULT (output)
+    CHARACTER(*), INTENT(IN) :: input
+    CHARACTER(LEN(input)) :: outputTemp
+    CHARACTER(LEN(input)) :: output
 ! -- Local variables
-      INTEGER :: i,j
+    INTEGER :: i,j
 ! -- Copy input string
-      outputTemp = input
+    outputTemp = input
 ! Blank output
-      Do i = 1, LEN( outputTemp )
-        output( i:i ) = " "
-      End Do
+    Do i = 1, LEN( outputTemp )
+      output( i:i ) = " "
+    End Do
 ! transfer outputtemp to output without spaces
-      j = 0
-      Do i = 1, LEN( outputTemp )
-        If(outputTemp( i:i ).ne." ")Then
-          j = j + 1
-          output( j:j ) = outputTemp( i:i )
-        End If
-      End Do
-    End Function RemoveSpaces
+    j = 0
+    Do i = 1, LEN( outputTemp )
+      If(outputTemp( i:i ).ne." ")Then
+        j = j + 1
+        output( j:j ) = outputTemp( i:i )
+      End If
+    End Do
+  End Function RemoveSpaces
 
 End Program activitylite
